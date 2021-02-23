@@ -10,4 +10,5 @@ Automatic solver for https://le-slo.itch.io/flockoban
 
 ## TODO
 
-Rename stage*.txt and ans*.txt to <time>.in and <time>.ans
+- Rename stage*.txt and ans*.txt to <time>.in and <time>.ans
+- Auto-solver with JavaScript.
