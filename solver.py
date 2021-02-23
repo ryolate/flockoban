@@ -1,17 +1,19 @@
-#!/usr/bin/env python3
+#!/usr/bin/env pypy3
 
 from typing import List, Tuple, Dict, Set, FrozenSet
 from enum import IntFlag, IntEnum, auto
 from sortedcontainers import SortedSet, SortedDict
 from collections import deque
+import sys
 
 
 class ActorType(IntFlag):
     PLAYER = auto()
     WHITE = auto()
     BROWN = auto()
+    GRAY = auto()
     EMPTY = auto()
-    SHEEP = WHITE | BROWN
+    SHEEP = WHITE | BROWN | GRAY
 
 
 Pos = Tuple[int, int]
@@ -23,6 +25,7 @@ class BackgroundType(IntEnum):
     BLOCK = auto()
     WHITE = auto()
     BROWN = auto()
+    GRAY = auto()
     EMPTY = auto()
 
 
@@ -41,7 +44,7 @@ KEYS = "→↓←↑"
 
 
 def get_actor(a: Actors, p: Pos) -> ActorType:
-    for i in [ActorType.PLAYER, ActorType.WHITE, ActorType.BROWN]:
+    for i in [ActorType.PLAYER, ActorType.WHITE, ActorType.BROWN, ActorType.GRAY]:
         if i in a and p in a[i]:
             return i
     return ActorType.EMPTY
@@ -79,24 +82,25 @@ def move(b: Background, a: Actors, d: int):
         return False
 
     next_ac = get_actor(a, next)
-    if next_ac == ActorType.BROWN:
+    if next_ac in ActorType.SHEEP and next_ac != ActorType.WHITE:
         return False
 
-    def move_sheep(p: Pos, visited: Set[Pos]) -> bool:
+    # visited: 1: before move 2: after move
+    def move_sheep(p: Pos, visited: Dict[Pos, int]) -> bool:
         assert get_actor(a, p) in ActorType.SHEEP
-        visited.add(p)
+        visited[p] = 1
 
         nx = pos_add(p, DIR[d])
         if get_bg(b, nx) == BackgroundType.BLOCK:
             return False
 
         if get_actor(a, nx) in ActorType.SHEEP:
-            assert nx not in visited
             if not move_sheep(nx, visited):
                 return False
 
         # move self
         advance_actor(a, p, nx)
+        visited[nx] = 2
 
         # move others
         for nd in range(len(DIR)):
@@ -109,7 +113,7 @@ def move(b: Background, a: Actors, d: int):
         return True
 
     if next_ac == ActorType.WHITE:
-        moved = move_sheep(next, set())
+        moved = move_sheep(next, dict())
         if not moved:
             return False
 
@@ -118,7 +122,8 @@ def move(b: Background, a: Actors, d: int):
 
     prev = pos_sub(cur, DIR[d])
     if get_actor(a, prev) == ActorType.BROWN:
-        move_sheep(prev, set())
+        # print("current state: ", a, file=sys.stderr)
+        move_sheep(prev, dict())
 
     return True
 
@@ -130,6 +135,7 @@ def new_background(ss: List[str]) -> Background:
         '#': BackgroundType.BLOCK,
         'W': BackgroundType.WHITE,
         'B': BackgroundType.BROWN,
+        'G': BackgroundType.GRAY,
     }
     for s in ss:
         row = []
@@ -148,6 +154,7 @@ def new_actors(ss: List[str]) -> Actors:
         'S': ActorType.PLAYER,
         'w': ActorType.WHITE,
         'b': ActorType.BROWN,
+        'g': ActorType.GRAY,
     }
     for i in range(len(ss)):
         for j in range(len(ss[0])):
@@ -172,6 +179,7 @@ def is_goal(b: Background, a: Actors) -> bool:
         ActorType.PLAYER: BackgroundType.START,
         ActorType.WHITE: BackgroundType.WHITE,
         ActorType.BROWN: BackgroundType.BROWN,
+        ActorType.GRAY: BackgroundType.GRAY,
     }
     for k in mapping.keys() & a.keys():
         for p in a[k]:
@@ -184,7 +192,8 @@ def freeze_actors(a: Actors) -> Tuple[Pos, FrozenSet[Pos], FrozenSet[Pos]]:
     return (
         a[ActorType.PLAYER][0],
         frozenset(a.get(ActorType.WHITE) or []),
-        frozenset(a.get(ActorType.BROWN) or [])
+        frozenset(a.get(ActorType.BROWN) or []),
+        frozenset(a.get(ActorType.GRAY) or []),
     )
 
 
@@ -198,8 +207,10 @@ def solve(field: List[str]) -> List[str]:
             . empty
             w white sheep (push)
             b brown sheep (pull)
+            g gray sheep
             W white goal
             B brown goal
+            G gray goal
     Returns:
         keys to input.
     """

@@ -2,6 +2,9 @@
 
 Automatic solver for https://le-slo.itch.io/flockoban
 
-## TODO
+## Set up
 
-Solve problems after stage 15.
+`apt install pypy3`
+
+`pypy3 -m pip install sortedcontainers`
+
