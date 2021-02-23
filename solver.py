@@ -65,8 +65,6 @@ def pos_sub(p: Pos, q: Pos) -> Pos:
 
 
 def advance_actor(a: Actors, p: Pos, empty_pos: Pos):
-    assert get_actor(
-        a, empty_pos) == ActorType.EMPTY, f'{empty_pos} contains {get_actor(a, empty_pos)}'
     t = get_actor(a, p)
     assert t != ActorType.EMPTY
     a[t].remove(p)
@@ -122,7 +120,6 @@ def move(b: Background, a: Actors, d: int):
 
     prev = pos_sub(cur, DIR[d])
     if get_actor(a, prev) == ActorType.BROWN:
-        # print("current state: ", a, file=sys.stderr)
         move_sheep(prev, dict())
 
     return True

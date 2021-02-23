@@ -8,3 +8,6 @@ Automatic solver for https://le-slo.itch.io/flockoban
 
 `pypy3 -m pip install sortedcontainers`
 
+## TODO
+
+Rename stage*.txt and ans*.txt to <time>.in and <time>.ans
