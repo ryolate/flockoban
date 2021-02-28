@@ -6,11 +6,6 @@ from selenium.webdriver.remote.webelement import WebElement
 DIV = "html_embed_widget_69675"
 
 
-def push_key(driver: webdriver.Chrome, c: str):
-    webdriver.ActionChains(driver).send_keys(c * 200).perform()
-    time.sleep(0.1)
-
-
 MAPPING = {
     '→': 'd',
     '↓': 's',
@@ -19,36 +14,46 @@ MAPPING = {
 }
 
 
-def solve(moves: str):
-    keys = "".join(map(lambda x: MAPPING[x], moves)) + 's'
+class Client:
+    def __init__(self):
+        opt = webdriver.ChromeOptions()
+        opt.debugger_address = "localhost:9222"
+        self.driver = webdriver.Chrome(options=opt)
 
-    opt = webdriver.ChromeOptions()
-    opt.debugger_address = "localhost:9222"
-    driver = webdriver.Chrome(options=opt)
+        if not self.driver.title.startswith("Flockoban"):
+            print("Open flockoban page and try again.", file=sys.stderr)
+            exit(1)
 
-    if not driver.title.startswith("Flockoban"):
-        print("Open flockoban page and try again.", file=sys.stderr)
-        exit(1)
+        self.game: WebElement = self.driver.find_element_by_id(DIV)
 
-    d: WebElement = driver.find_element_by_id(DIV)
-    print(f"id: {d.id}, {d.get_attribute('class')}")
+        webdriver.ActionChains(self.driver).move_to_element(
+            self.game).perform()
+        time.sleep(0.1)
+        self.game.click()
 
-    webdriver.ActionChains(driver).move_to_element(d).perform()
-    time.sleep(0.1)
-    d.click()
+    def push_key(self, c: str):
+        webdriver.ActionChains(self.driver).send_keys(c * 200).perform()
+        time.sleep(0.1)
 
-    # reset
-    push_key(driver, "r")
-    time.sleep(2)
+    def solve(self, moves: str):
+        keys = "".join(map(lambda x: MAPPING[x], moves)) + 's'
 
-    for c in keys:
-        push_key(driver, c)
+        # reset
+        self.push_key("r")
+        time.sleep(2)
 
-    driver.quit()
+        for c in keys:
+            self.push_key(c)
+
+    def close(self):
+        self.driver.quit()
 
 
 def main():
-    solve(input())
+    cl = Client()
+
+    cl.solve(input())
+    cl.close()
 
 
 if __name__ == "__main__":
